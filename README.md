@@ -17,6 +17,9 @@ Should be used with a compatible PCB, of which the source design is included in 
 ## Altium PCB Top View:
 ![Altium PCB Top View](./Multimedia/Images/PCB/PCB%20Altium%202D%20view.png)
 
+## PCB Top View with descriptions:
+![PCB Top View with descriptions](./Multimedia/Images/PCB/Real%20PCB%20top%20view%20with%20descriptions.jpg)
+
 
 
 
