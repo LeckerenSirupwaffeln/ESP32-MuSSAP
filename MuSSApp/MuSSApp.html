@@ -1,0 +1,322 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="MuSSApp">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+   
+    
+  </head>
+
+  <body>
+    
+    <p>
+        <span>Status: </span><span id="status_text">Disconnected!</span>
+        <button onclick="BLE_connect()">Connect to a Bluetooth LE device</button>
+    </p>
+    
+    <p>
+        <p>
+            <span> Red light Intensity: </span> <span id="red_light_intensity_text">NaN</span><span>%</span>
+            <input id="red_light_intensity_slider" type="range" min="0" max="32" value="50" onchange="update_light('red', this.value)">
+            
+            <span> Green light Intensity: </span> <span id="green_light_intensity_text">NaN</span><span>%</span>
+            <input id="green_light_intensity_slider" type="range" min="0" max="32" value="50" onchange="update_light('green', this.value)">
+            
+            <span> Blue light Intensity: </span> <span id="blue_light_intensity_text">NaN</span><span>%</span>
+            <input id="blue_light_intensity_slider" type="range" min="0" max="32" value="50" onchange="update_light('blue', this.value)">
+        </p>
+        
+        <p>
+            <span> Vibration Strength: </span> <span id="vibration_strength_text">NaN</span><span>%</span>
+            <input id="vibration_strength_slider" type="range" min="0" max="128" value="50" onchange="update_vibration_strength(this.value)">
+        </p>
+        
+        <p>
+            <span> Volume: </span> <span id="volume_text">NaN</span><span>%</span>
+            <input id="volume_slider" type="range" min="0" max="255" value="50" onchange="update_volume(this.value)">
+        </p>
+        
+        <p>
+            <input type="file" class="file" />
+             <button onclick="play()">Play</button>
+             <button onclick="stop()">Stop</button> 
+        </p>
+        
+        
+    </p>
+    
+    
+    
+    <script>
+        var timer_music;
+        var timer_peripherals;
+        var current_state = 1;
+    
+        var contents;
+        var i = 0;
+        function process(event) {
+          var files = event.target.files
+          var reader = new FileReader()
+          reader.onload = function() {
+            contents = new Uint16Array(this.result);
+            i = 0;
+          }
+
+          reader.readAsArrayBuffer(files[0])
+        }
+
+        var input = document.querySelector('.file')
+        input.addEventListener('change', process, false)
+            
+        var bluetoothDevice = null;
+        
+        var red_light_characteristic = null;
+        var green_light_characteristic = null;
+        var blue_light_characteristic = null;
+        var vibration_characteristic = null;
+        var volume_characteristic = null;
+        var i2s_buffer_characteristic = null;
+        
+        var red_light_intensity = null;
+        var green_light_intensity = null;
+        var blue_light_intensity = null;
+        var vibration_strength = null;
+        var volume = null;
+        
+        var red_light_intensity_text = document.getElementById("red_light_intensity_text");
+        var red_light_intensity_slider = document.getElementById("red_light_intensity_slider");
+        
+        var green_light_intensity_text = document.getElementById("green_light_intensity_text");
+        var green_light_intensity_slider = document.getElementById("green_light_intensity_slider");
+        
+        var blue_light_intensity_text = document.getElementById("blue_light_intensity_text");
+        var blue_light_intensity_slider = document.getElementById("blue_light_intensity_slider");
+        
+        var vibration_strength_text = document.getElementById("vibration_strength_text");
+        var vibration_strength_slider = document.getElementById("vibration_strength_slider");
+        
+        var volume_text = document.getElementById("volume_text");
+        var volume_slider = document.getElementById("volume_slider");
+        
+        
+        var service_uuid = '0x1234';
+        if (service_uuid.startsWith('0x')) {
+            service_uuid = parseInt(service_uuid);
+        }
+        
+        function BLE_connect() {
+            console.log('Requesting any MuSSAP Device...');
+            navigator.bluetooth.requestDevice(
+                {filters: [{services: [service_uuid]}]})
+            .then(device => {
+                bluetoothDevice = device;
+                console.log(bluetoothDevice.id);
+                bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+                bluetoothDevice.gatt.connect();
+                console.log(bluetoothDevice.id);
+                document.getElementById("status_text").innerHTML = 'Connected!';
+                refresh_data();
+            })
+            .catch(error => {
+                document.getElementById("status_text").innerHTML = 'Error! Check the console error log!';
+                console.error(error);
+            });
+        }
+
+        function onDisconnected() {
+            document.getElementById("status_text").innerHTML = 'Disconnected!';
+        }
+    
+        function refresh_data() {
+          if (bluetoothDevice.gatt.connected) {
+              bluetoothDevice.gatt.getPrimaryService(service_uuid)
+              .then(service => {
+                return service.getCharacteristics();
+              })
+              .then(characteristics => {
+                let queue = Promise.resolve();
+                characteristics.forEach(characteristic => {
+                  switch (characteristic.uuid) {
+                    case BluetoothUUID.getCharacteristic(parseInt('0x0001')):
+                      queue = queue.then(_ => characteristic.readValue()).then(value => {
+                        red_light_intensity = value.getUint8(0);
+                      });
+                      red_light_characteristic = characteristic;
+                      break;
+                    
+                    case BluetoothUUID.getCharacteristic(parseInt('0x0002')):
+                      queue = queue.then(_ => characteristic.readValue()).then(value => {
+                        green_light_intensity = value.getUint8(0);
+                      });
+                      green_light_characteristic = characteristic;
+                      break;
+                    
+                    case BluetoothUUID.getCharacteristic(parseInt('0x0003')):
+                      queue = queue.then(_ => characteristic.readValue()).then(value => {
+                        blue_light_intensity = value.getUint8(0);
+                      });
+                      blue_light_characteristic = characteristic;
+                      break;
+                    case BluetoothUUID.getCharacteristic(parseInt('0x0004')):
+                      queue = queue.then(_ => characteristic.readValue()).then(value => {
+                        vibration_strength = value.getUint8(0);
+                      });
+                      vibration_characteristic = characteristic;
+                      break;
+                    
+                    case BluetoothUUID.getCharacteristic(parseInt('0x0005')):
+                      queue = queue.then(_ => characteristic.readValue()).then(value => {
+                        volume = value.getUint8(0);
+                      });
+                      volume_characteristic = characteristic;
+                      break;
+                    
+                    case BluetoothUUID.getCharacteristic(parseInt('0x0006')):
+                      i2s_buffer_characteristic = characteristic;
+                      console.log(characteristic);
+                      break;
+
+                    default: console.log('Unknown Characteristic: ' + characteristic.uuid);
+                  }
+                });
+                return queue;
+              })
+              .then(() => {
+                red_light_intensity_text.innerHTML = red_light_intensity;
+                red_light_intensity_slider.value = red_light_intensity;
+                
+                green_light_intensity_text.innerHTML = green_light_intensity;
+                green_light_intensity_slider.value = green_light_intensity;
+                
+                blue_light_intensity_text.innerHTML = blue_light_intensity;
+                blue_light_intensity_slider.value = blue_light_intensity;
+                
+                vibration_strength_text.innerHTML = vibration_strength;
+                vibration_strength_slider.value = vibration_strength;
+              
+                volume_text.innerHTML = volume;
+                volume_slider.value = volume;
+              })
+              .catch(error => {
+                console.error(error);
+              });
+          }
+          
+        }
+        
+        async function update_light(color, value)
+        {   
+            try {
+                switch (color) {
+                case 'red':
+                    red_light_intensity = value;
+                    send_value(red_light_characteristic, 128 - red_light_intensity);
+                    red_light_intensity_text.innerHTML = red_light_intensity;
+                    break;
+                
+                case 'green':
+                    green_light_intensity = value;
+                    send_value(green_light_characteristic, 128 - green_light_intensity);
+                    green_light_intensity_text.innerHTML = green_light_intensity;
+                    break;
+                
+                case 'blue':
+                    blue_light_intensity = value;
+                    send_value(blue_light_characteristic, 128 - blue_light_intensity);
+                    blue_light_intensity_text.innerHTML = blue_light_intensity;
+                    break;
+                }
+            } catch (error) {
+                console.error(error);
+            }
+            
+        }
+        
+        async function update_vibration_strength(value)
+        {   
+            try {
+                vibration_strength = value;
+                send_value(vibration_characteristic, vibration_strength);
+                vibration_strength_text.innerHTML = vibration_strength;
+            } catch (error) {
+                console.error(error);
+            }
+            
+        }
+        
+        async function update_volume(value)
+        {
+            try {
+                volume = value;
+                send_value(volume_characteristic, 255 - volume);
+                volume_text.innerHTML = volume;
+                //volume_slider.value = volume;
+            } catch (error) {
+                console.error(error);
+            }
+        }
+        
+        async function send_value(characteristic, value)
+        {
+            characteristic.writeValueWithoutResponse(Uint8Array.of(value));
+        }
+        
+        async function send_16_bits_music()
+        {   
+            for(let j = 0; j < 40; j++)
+            {
+                if (i < contents.length - 200)
+                {
+                    let tmp = contents.slice(i, i+200);
+                    console.log(tmp);
+                    await i2s_buffer_characteristic.writeValueWithoutResponse(tmp);
+                    i += 200;
+                }
+            }
+        }
+        
+        async function stimulate()
+        {   
+            if (current_state)
+            {
+                send_value(vibration_characteristic, 0);
+                send_value(red_light_characteristic, 128);
+                send_value(green_light_characteristic, 128);
+                send_value(blue_light_characteristic, 128);
+                current_state = 0;
+            }
+            
+            else
+            {
+                send_value(vibration_characteristic, vibration_strength);
+                send_value(red_light_characteristic, 128 - red_light_intensity);
+                send_value(green_light_characteristic, 128 - green_light_intensity);
+                send_value(blue_light_characteristic, 128 - blue_light_intensity);
+                current_state = 1;
+            }
+            
+        }
+        
+        function play()
+        {
+            timer_music = setInterval(send_16_bits_music, 500);
+            timer_peripherals = setInterval(stimulate, 410);
+        }
+        
+        function stop()
+        {
+            clearInterval(timer_music);
+            clearInterval(timer_peripherals);
+            send_value(vibration_characteristic, 0);
+            send_value(red_light_characteristic, 128);
+            send_value(green_light_characteristic, 128);
+            send_value(blue_light_characteristic, 128);
+            current_state = 0;
+        }
+        
+    </script>
+  </body>
+  
+  
+</html>
