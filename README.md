@@ -9,7 +9,7 @@ Should be used with a BLE Web Application, which is included in this repo under 
 Should be used with a compatible PCB, of which the source design is included in this repo under the folder "Altium PCB Design".\
 
 ![General Concept](./Multimedia/Images/MuSSAP_General_Concept_English.jpg)
-![Architectural Diagram](./Multimedia/Images/Technical%20Design/Architectural%20Diagram.jpg.jpg)
+![Architectural Diagram](./Multimedia/Images/Technical%20Design/Architectural%20Diagram.jpg)
 
 
 
