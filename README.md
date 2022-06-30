@@ -8,10 +8,10 @@ Should be used with a BLE Web Application, which is included in this repo under 
 	To use this application, simply connect to the device, select the proper settings and a .raw audio file and press "Play".\
 Should be used with a compatible PCB, of which the source design is included in this repo under the folder "Altium PCB Design".\
 
-##General Concept:
+## General Concept:
 ![General Concept](./Multimedia/Images/MuSSAP_General_Concept_English.jpg)
 
-##Architectural Diagram:
+## Architectural Diagram:
 ![Architectural Diagram](./Multimedia/Images/Technical%20Design/Architectural%20Diagram.jpg)
 
 
