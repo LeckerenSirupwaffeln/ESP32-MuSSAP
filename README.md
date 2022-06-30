@@ -14,6 +14,9 @@ Should be used with a compatible PCB, of which the source design is included in 
 ## Architectural Diagram:
 ![Architectural Diagram](./Multimedia/Images/Technical%20Design/Architectural%20Diagram.jpg)
 
+## Altium PCB Top View:
+![Altium PCB Top View](./Multimedia/Images/PCB/PCB%20Altium%202D%20view.png)
+
 
 
 
